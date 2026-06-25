@@ -43,5 +43,10 @@ financebench:
   split: train
   max_questions_for_first_run: 25
 
+evaluation:
+  default_limit: 25
+  retrieval_k_values: [1, 3, 5, 10]
+  output_path: data/evaluation/retrieval_eval_results.csv
+
 parser:
   max_pdfs_for_first_run: 5

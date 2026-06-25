@@ -12,4 +12,4 @@ tqdm
 scikit-learn
 tiktoken
 jupyter
-
+pytrec_eval

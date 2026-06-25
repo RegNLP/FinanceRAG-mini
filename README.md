@@ -74,6 +74,7 @@ flowchart TD
     P --> PIPE
     PIPE --> GEN([06_generation.py<br/>grounded answer generation])
     GEN --> A[/Answer with citations<br/>and limitations/]
+    PIPE --> EV([08_evaluation.py<br/>FinanceBench evaluation])
 ```
 
 ## Project Structure
@@ -879,6 +880,232 @@ The main function for other modules is:
 run_rag_pipeline(...)
 ```
 
+## Step 08: Evaluate Retrieval
+
+File:
+
+```text
+app/08_evaluation.py
+```
+
+Input:
+
+```text
+data/evaluation/financebench_open_source.jsonl
+retrieval results from app/04_retrieval.py
+```
+
+Output:
+
+```text
+retrieval metrics
+data/evaluation/retrieval_eval_results.csv
+```
+
+Run the default evaluation:
+
+```bash
+./venv/bin/python app/08_evaluation.py
+```
+
+Evaluate only 5 questions:
+
+```bash
+./venv/bin/python app/08_evaluation.py --limit 5
+```
+
+Compare retrieval methods:
+
+```bash
+./venv/bin/python app/08_evaluation.py --method bm25 --limit 25
+./venv/bin/python app/08_evaluation.py --method dense --limit 25
+./venv/bin/python app/08_evaluation.py --method hybrid --limit 25
+```
+
+What this first evaluation checks:
+
+```text
+Did retrieval return a chunk from the gold FinanceBench document?
+Did that chunk overlap the gold evidence page?
+At what rank did the first matching chunk appear?
+```
+
+Metrics:
+
+```text
+doc_hit_rate_at_1
+doc_hit_rate_at_3
+doc_hit_rate_at_5
+doc_hit_rate_at_10
+doc_mrr
+
+page_hit_rate_at_1
+page_hit_rate_at_3
+page_hit_rate_at_5
+page_hit_rate_at_10
+page_mrr
+```
+
+Standard `pytrec_eval` metrics:
+
+```text
+recall_1
+recall_3
+recall_5
+recall_10
+recip_rank
+ndcg_cut_10
+map_cut_10
+```
+
+Important evaluation idea:
+
+```text
+This is retrieval evaluation, not full answer evaluation.
+It checks whether the evidence retrieval layer can find the right source area.
+Answer correctness and faithfulness can be evaluated later.
+```
+
+Document-level metrics check whether retrieval found the correct filing.
+
+Page-level metrics are stricter and check whether retrieval found a chunk overlapping the gold evidence page. Low page-level scores usually mean the system needs better chunking, table handling, query rewriting, or reranking.
+
+Why we use both custom metrics and `pytrec_eval`:
+
+```text
+FinanceBench labels evidence by document name and evidence page.
+Our retriever returns chunk IDs.
+
+For pytrec_eval, we convert gold document/page evidence into qrels:
+question_id -> relevant chunk_ids
+```
+
+The custom document-level metrics are useful diagnostics because they tell us whether retrieval found the correct filing even when it missed the exact evidence page.
+
+The `pytrec_eval` metrics are stricter because they evaluate retrieved chunk IDs against gold evidence-page chunk IDs.
+
+### Current Evaluation Results
+
+Latest retrieval evaluation run:
+
+```text
+./venv/bin/python app/08_evaluation.py --method bm25 --limit 10000 --top-k 10
+./venv/bin/python app/08_evaluation.py --method dense --limit 10000 --top-k 10
+./venv/bin/python app/08_evaluation.py --method hybrid --limit 10000 --top-k 10
+```
+
+The open-source FinanceBench file used in this project contains 150 questions, so `--limit 10000` still evaluates only 150 questions.
+
+Evaluation setup:
+
+```text
+questions = 150
+top_k = 10
+qrels relevant chunks = 1044
+```
+
+Custom retrieval metrics:
+
+| Method | doc@1 | doc@3 | doc@5 | doc@10 | doc MRR | page@1 | page@3 | page@5 | page@10 | page MRR |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| BM25 | 0.140 | 0.193 | 0.273 | 0.353 | 0.193 | 0.047 | 0.060 | 0.080 | 0.100 | 0.061 |
+| Dense | 0.187 | 0.340 | 0.447 | 0.640 | 0.300 | 0.073 | 0.160 | 0.207 | 0.287 | 0.132 |
+| Hybrid | 0.160 | 0.307 | 0.380 | 0.527 | 0.263 | 0.053 | 0.107 | 0.153 | 0.227 | 0.095 |
+
+`pytrec_eval` metrics:
+
+| Method | recall@1 | recall@3 | recall@5 | recall@10 | recip_rank | nDCG@10 | MAP@10 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| BM25 | 0.013 | 0.020 | 0.030 | 0.039 | 0.061 | 0.036 | 0.024 |
+| Dense | 0.015 | 0.050 | 0.065 | 0.083 | 0.132 | 0.075 | 0.043 |
+| Hybrid | 0.012 | 0.038 | 0.049 | 0.071 | 0.095 | 0.059 | 0.036 |
+
+Current interpretation:
+
+```text
+Dense retrieval is currently strongest.
+Hybrid is better than BM25 but worse than dense with the current RRF settings.
+Exact evidence-page retrieval is still weak, especially for table-heavy financial questions.
+```
+
+Important difference between hit rate and TREC recall:
+
+```text
+page_hit_rate_at_10 = "Did we retrieve at least one correct evidence-page chunk?"
+recall@10 = "How many of all relevant evidence-page chunks did we retrieve?"
+
+So a page_hit_rate_at_10 value like 0.287 can happen together with a
+pytrec_eval recall@10 value like 0.083.
+
+Hit rate is binary per question.
+Recall is proportional to the number of relevant chunks recovered.
+```
+
+We also manually checked one question by comparing the retrieved chunk IDs against the generated qrels. The manual Recall@10 calculation matched the `pytrec_eval` Recall@10 result for that question, so the low TREC scores are not just a reporting bug.
+
+This suggests the next retrieval improvements should focus on:
+
+```text
+table-aware chunking
+better page/evidence alignment
+query rewriting
+metadata filtering by company/document period
+reranking evaluation
+hybrid weighting or fusion tuning
+```
+
+## Step 09: Streamlit App
+
+File:
+
+```text
+app/09_streamlit_app.py
+```
+
+Input:
+
+```text
+User question
+Retrieval settings from the sidebar
+```
+
+Output:
+
+```text
+answer
+evidence chunks
+diagnostics
+human feedback CSV
+```
+
+Run the app:
+
+```bash
+./venv/bin/python -m streamlit run app/09_streamlit_app.py
+```
+
+The app provides:
+
+```text
+question box
+retrieval method selector
+top-k evidence control
+optional reranker
+dry-run mode
+answer display
+evidence inspection
+diagnostics panel
+human feedback form
+```
+
+Human feedback is saved to:
+
+```text
+data/evaluation/human_feedback.csv
+```
+
+Use dry-run mode when you want to inspect retrieved evidence and the prompt without calling OpenAI.
+
 ## Static vs Dynamic RAG Indexing
 
 This project uses a static corpus:
@@ -994,15 +1221,6 @@ Dynamic corpus:
   update or rebuild indexes regularly
 ```
 
-## Remaining Steps
-
-Next files will be implemented later:
-
-```text
-app/08_evaluation.py     -> FinanceBench evaluation
-app/09_streamlit_app.py  -> interactive UI
-```
-
 ## Status
 
 Current status:
@@ -1015,5 +1233,6 @@ Retrieval complete.
 Reranking complete.
 Generation complete and live API call verified.
 Pipeline orchestration complete.
-Next step: evaluation.
+Evaluation implemented for retrieval metrics.
+Streamlit UI complete.
 ```
