@@ -1,0 +1,38 @@
+paths:
+  raw_pdf_dir: data/raw_pdfs
+  parsed_text_path: data/parsed_text/documents.jsonl
+  chunk_path: data/chunks/chunks.jsonl
+  financebench_questions_path: data/evaluation/financebench_open_source.jsonl
+  financebench_document_information_path: data/evaluation/financebench_document_information.jsonl
+  bm25_index_path: data/indexes/bm25.pkl
+  faiss_index_path: data/indexes/faiss.index
+  chunk_metadata_path: data/indexes/chunk_metadata.jsonl
+  human_feedback_path: data/evaluation/human_feedback.csv
+
+chunking:
+  chunk_size_tokens: 600
+  chunk_overlap_tokens: 80
+
+retrieval:
+  method: hybrid
+  bm25_top_k: 20
+  dense_top_k: 20
+  final_top_k: 5
+  use_reranker: false
+
+indexing:
+  embedding_batch_size: 32
+  normalize_embeddings: true
+
+models:
+  embedding_model: BAAI/bge-base-en-v1.5
+  reranker_model: cross-encoder/ms-marco-MiniLM-L-6-v2
+  llm_model: gpt-4o-mini
+
+financebench:
+  dataset_name: PatronusAI/financebench
+  split: train
+  max_questions_for_first_run: 25
+
+parser:
+  max_pdfs_for_first_run: 5

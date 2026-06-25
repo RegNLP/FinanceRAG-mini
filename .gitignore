@@ -1,0 +1,17 @@
+venv/
+.env
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+data/parsed_text/*
+data/chunks/*
+data/indexes/*
+data/evaluation/*.csv
+data/evaluation/*.jsonl
+data/raw_pdfs/*.pdf
+!data/parsed_text/.gitkeep
+!data/chunks/.gitkeep
+!data/indexes/.gitkeep
+!data/evaluation/.gitkeep
+!data/raw_pdfs/.gitkeep
