@@ -49,7 +49,8 @@ Query-time retrieval flow:
 
 ```mermaid
 flowchart TD
-    Q[/User question/] --> R([04_retrieval.py<br/>retrieve evidence])
+    Q[/User question/] --> PIPE([07_rag_pipeline.py<br/>orchestration layer])
+    PIPE --> R([04_retrieval.py<br/>retrieve evidence])
 
     B[(bm25.pkl<br/>keyword index)] --> R
     F[(faiss.index<br/>vector index)] --> R
@@ -70,7 +71,8 @@ flowchart TD
     RR -->|No| P[Final retrieved chunks<br/>chunk_id, document, pages, score]
     RR -->|Yes| RE([05_reranking.py<br/>cross-encoder reranking])
     RE --> P
-    P --> GEN([06_generation.py<br/>grounded answer generation])
+    P --> PIPE
+    PIPE --> GEN([06_generation.py<br/>grounded answer generation])
     GEN --> A[/Answer with citations<br/>and limitations/]
 ```
 
@@ -820,6 +822,63 @@ None
 
 This is expected behavior. The retriever will always return some closest chunks, but the generator should refuse to answer when those chunks do not contain relevant evidence.
 
+## Step 07: RAG Pipeline
+
+File:
+
+```text
+app/07_rag_pipeline.py
+```
+
+Input:
+
+```text
+User question
+Runtime settings from config.yaml or CLI arguments
+```
+
+Output:
+
+```text
+answer
+evidence chunks
+prompt
+diagnostics
+```
+
+Dry run:
+
+```bash
+./venv/bin/python app/07_rag_pipeline.py "What was Netflix revenue in 2017?" --method hybrid --final-top-k 3 --dry-run
+```
+
+Live answer:
+
+```bash
+./venv/bin/python app/07_rag_pipeline.py "What was Netflix revenue in 2017?" --method hybrid --final-top-k 3
+```
+
+Live answer with reranking:
+
+```bash
+./venv/bin/python app/07_rag_pipeline.py "What was Netflix revenue in 2017?" --method hybrid --use-reranker --candidate-top-k 10 --final-top-k 3
+```
+
+Why this file exists:
+
+```text
+The Streamlit app and evaluation code should not manually call retrieval,
+reranking, prompt construction, and generation separately.
+
+They should call one pipeline function and receive structured output.
+```
+
+The main function for other modules is:
+
+```python
+run_rag_pipeline(...)
+```
+
 ## Static vs Dynamic RAG Indexing
 
 This project uses a static corpus:
@@ -940,7 +999,6 @@ Dynamic corpus:
 Next files will be implemented later:
 
 ```text
-app/07_rag_pipeline.py   -> orchestration layer
 app/08_evaluation.py     -> FinanceBench evaluation
 app/09_streamlit_app.py  -> interactive UI
 ```
@@ -956,5 +1014,6 @@ Full indexing complete.
 Retrieval complete.
 Reranking complete.
 Generation complete and live API call verified.
-Next step: pipeline orchestration.
+Pipeline orchestration complete.
+Next step: evaluation.
 ```
