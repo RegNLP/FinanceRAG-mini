@@ -292,7 +292,7 @@ source venv/bin/activate
 Install dependencies:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 Create a local `.env` file:
@@ -359,30 +359,30 @@ The project assumes the following learning flow:
 cd /Users/tuba.gokhan/Desktop/FinanceRAG-mini
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 cp .env.example .env
 ```
 
 ```bash
 cd /Users/tuba.gokhan/Desktop/FinanceRAG-mini
 source venv/bin/activate
-python app/00_config.py
+./venv/bin/python app/00_config.py
 ```
 
 ```bash
-python app/01_parser.py --limit 2
-python app/02_chunker.py --limit-documents 2
-python app/03_indexer.py --limit-chunks 500
+./venv/bin/python app/01_parser.py --limit 2
+./venv/bin/python app/02_chunker.py --limit-documents 2
+./venv/bin/python app/03_indexer.py --limit-chunks 500
 ```
 
 ```bash
-python app/04_retrieval.py "What was Netflix revenue in 2017?" --method bm25 --top-k 5
-python app/04_retrieval.py "What was Netflix revenue in 2017?" --method dense --top-k 5
-python app/04_retrieval.py "What was Netflix revenue in 2017?" --method hybrid --top-k 5
+./venv/bin/python app/04_retrieval.py "What was Netflix revenue in 2017?" --method bm25 --top-k 5
+./venv/bin/python app/04_retrieval.py "What was Netflix revenue in 2017?" --method dense --top-k 5
+./venv/bin/python app/04_retrieval.py "What was Netflix revenue in 2017?" --method hybrid --top-k 5
 ```
 
 ```bash
-python app/05_reranking.py "What was Netflix revenue in 2017?" --method hybrid --candidate-top-k 20 --final-top-k 5
+./venv/bin/python app/05_reranking.py "What was Netflix revenue in 2017?" --method hybrid --candidate-top-k 20 --final-top-k 5
 ```
 
 ```bash
@@ -409,9 +409,9 @@ python app/05_reranking.py "What was Netflix revenue in 2017?" --method hybrid -
 ```
 
 ```bash
-python app/01_parser.py --all
-python app/02_chunker.py
-python app/03_indexer.py
+./venv/bin/python app/01_parser.py --all
+./venv/bin/python app/02_chunker.py
+./venv/bin/python app/03_indexer.py
 ./venv/bin/python app/08_evaluation.py --method bm25 --limit 10000 --top-k 10
 ./venv/bin/python app/08_evaluation.py --method dense --limit 10000 --top-k 10
 ./venv/bin/python app/08_evaluation.py --method hybrid --limit 10000 --top-k 10
@@ -437,7 +437,7 @@ Load project settings and resolve paths.
 Run:
 
 ```bash
-python app/00_config.py
+./venv/bin/python app/00_config.py
 ```
 
 Why this matters:
@@ -483,19 +483,19 @@ data/parsed_text/documents.jsonl
 Run with the configured first-run limit:
 
 ```bash
-python app/01_parser.py
+./venv/bin/python app/01_parser.py
 ```
 
 Run only two PDFs:
 
 ```bash
-python app/01_parser.py --limit 2
+./venv/bin/python app/01_parser.py --limit 2
 ```
 
 Run all PDFs:
 
 ```bash
-python app/01_parser.py --all
+./venv/bin/python app/01_parser.py --all
 ```
 
 Each output record has:
@@ -544,13 +544,13 @@ data/chunks/chunks.jsonl
 Run after the parser has finished:
 
 ```bash
-python app/02_chunker.py
+./venv/bin/python app/02_chunker.py
 ```
 
 Run only two parsed documents:
 
 ```bash
-python app/02_chunker.py --limit-documents 2
+./venv/bin/python app/02_chunker.py --limit-documents 2
 ```
 
 Each output chunk has:
@@ -636,19 +636,19 @@ data/indexes/chunk_metadata.jsonl
 Run a small test:
 
 ```bash
-python app/03_indexer.py --limit-chunks 500
+./venv/bin/python app/03_indexer.py --limit-chunks 500
 ```
 
 Build only BM25 and metadata, skipping dense embeddings:
 
 ```bash
-python app/03_indexer.py --skip-dense
+./venv/bin/python app/03_indexer.py --skip-dense
 ```
 
 Build full BM25 and FAISS indexes:
 
 ```bash
-python app/03_indexer.py
+./venv/bin/python app/03_indexer.py
 ```
 
 What gets built:
@@ -723,19 +723,19 @@ ranked evidence chunks with scores and metadata
 Run BM25 keyword retrieval:
 
 ```bash
-python app/04_retrieval.py "What was Netflix revenue in 2017?" --method bm25 --top-k 5
+./venv/bin/python app/04_retrieval.py "What was Netflix revenue in 2017?" --method bm25 --top-k 5
 ```
 
 Run dense semantic retrieval:
 
 ```bash
-python app/04_retrieval.py "What was Netflix revenue in 2017?" --method dense --top-k 5
+./venv/bin/python app/04_retrieval.py "What was Netflix revenue in 2017?" --method dense --top-k 5
 ```
 
 Run hybrid retrieval:
 
 ```bash
-python app/04_retrieval.py "What was Netflix revenue in 2017?" --method hybrid --top-k 5
+./venv/bin/python app/04_retrieval.py "What was Netflix revenue in 2017?" --method hybrid --top-k 5
 ```
 
 Retrieval methods:
@@ -782,13 +782,13 @@ better ordered evidence chunks
 Run reranking with hybrid first-stage retrieval:
 
 ```bash
-python app/05_reranking.py "What was Netflix revenue in 2017?" --method hybrid
+./venv/bin/python app/05_reranking.py "What was Netflix revenue in 2017?" --method hybrid
 ```
 
 Run with custom candidate and final result counts:
 
 ```bash
-python app/05_reranking.py "What was Netflix revenue in 2017?" --method hybrid --candidate-top-k 20 --final-top-k 5
+./venv/bin/python app/05_reranking.py "What was Netflix revenue in 2017?" --method hybrid --candidate-top-k 20 --final-top-k 5
 ```
 
 What reranking does:
@@ -1292,9 +1292,9 @@ After the baseline system works, useful experiments include:
 Run the earlier stages first:
 
 ```bash
-python app/01_parser.py --all
-python app/02_chunker.py
-python app/03_indexer.py
+./venv/bin/python app/01_parser.py --all
+./venv/bin/python app/02_chunker.py
+./venv/bin/python app/03_indexer.py
 ```
 
 Check that these files exist:
@@ -1310,7 +1310,7 @@ data/indexes/chunk_metadata.jsonl
 Dense indexing embeds every chunk. Start with a smaller subset:
 
 ```bash
-python app/03_indexer.py --limit-chunks 500
+./venv/bin/python app/03_indexer.py --limit-chunks 500
 ```
 
 Then build the full index once the small run works.
