@@ -33,6 +33,11 @@ models:
   reranker_model: cross-encoder/ms-marco-MiniLM-L-6-v2
   llm_model: gpt-4o-mini
 
+generation:
+  max_output_tokens: 700
+  temperature: 0
+  evidence_top_k: 5
+
 financebench:
   dataset_name: PatronusAI/financebench
   split: train

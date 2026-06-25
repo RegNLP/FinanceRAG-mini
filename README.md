@@ -70,7 +70,8 @@ flowchart TD
     RR -->|No| P[Final retrieved chunks<br/>chunk_id, document, pages, score]
     RR -->|Yes| RE([05_reranking.py<br/>cross-encoder reranking])
     RE --> P
-    P --> G[Ready for generation]
+    P --> GEN([06_generation.py<br/>grounded answer generation])
+    GEN --> A[/Answer with citations<br/>and limitations/]
 ```
 
 ## Project Structure
@@ -708,6 +709,117 @@ BM25 and dense retrieval score chunks separately. A cross-encoder scores the pai
 
 That makes reranking more precise, but slower. It should be used on a small candidate set, such as top 20, not all 112,485 chunks.
 
+## Step 06: Generate Grounded Answers
+
+File:
+
+```text
+app/06_generation.py
+```
+
+Input:
+
+```text
+User question
+Top evidence chunks from retrieval/reranking
+```
+
+Output:
+
+```text
+answer with chunk citations and limitations
+```
+
+Dry run without calling OpenAI:
+
+```bash
+./venv/bin/python app/06_generation.py "What was Netflix revenue in 2017?" --method hybrid --dry-run
+```
+
+Generate an answer using retrieved evidence:
+
+```bash
+./venv/bin/python app/06_generation.py "What was Netflix revenue in 2017?" --method hybrid --final-top-k 3
+```
+
+Generate with reranking:
+
+```bash
+./venv/bin/python app/06_generation.py "What was Netflix revenue in 2017?" --method hybrid --use-reranker
+```
+
+The dry-run command is useful for learning because it shows exactly what evidence and instructions would be sent to the LLM.
+
+Generation model:
+
+```text
+gpt-4o-mini
+```
+
+The generator uses OpenAI's Responses API through the installed `openai` Python package.
+
+Important generation rule:
+
+```text
+The LLM should answer only from retrieved evidence.
+If the evidence is insufficient, it should say so.
+It should cite chunk IDs, not invent citations.
+```
+
+The prompt asks for:
+
+```text
+Answer
+Sources
+Limitations
+```
+
+Before running live generation, create `.env` and add:
+
+```text
+OPENAI_API_KEY=your_api_key_here
+```
+
+`.env.example` should stay as a safe template:
+
+```text
+OPENAI_API_KEY=
+```
+
+If Anaconda or another Python environment is active, use the project Python explicitly:
+
+```bash
+./venv/bin/python app/06_generation.py "What was Netflix revenue in 2017?" --method hybrid --final-top-k 3
+```
+
+Verified grounded answer example:
+
+```text
+Question:
+What was Netflix revenue in 2017?
+
+Answer:
+Netflix's revenue in 2017 was $11,692,713,000.
+
+Sources:
+[NETFLIX_2017_10K_chunk_0045]
+```
+
+Verified insufficient-evidence example:
+
+```text
+Question:
+Who won the FIFA World Cup in 2018?
+
+Answer:
+The provided evidence is insufficient to determine who won the FIFA World Cup in 2018.
+
+Sources:
+None
+```
+
+This is expected behavior. The retriever will always return some closest chunks, but the generator should refuse to answer when those chunks do not contain relevant evidence.
+
 ## Static vs Dynamic RAG Indexing
 
 This project uses a static corpus:
@@ -828,7 +940,6 @@ Dynamic corpus:
 Next files will be implemented later:
 
 ```text
-app/06_generation.py     -> source-grounded LLM answer generation
 app/07_rag_pipeline.py   -> orchestration layer
 app/08_evaluation.py     -> FinanceBench evaluation
 app/09_streamlit_app.py  -> interactive UI
@@ -844,5 +955,6 @@ Chunking complete.
 Full indexing complete.
 Retrieval complete.
 Reranking complete.
-Next step: generation.
+Generation complete and live API call verified.
+Next step: pipeline orchestration.
 ```
