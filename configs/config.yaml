@@ -20,6 +20,10 @@ retrieval:
   final_top_k: 5
   use_reranker: false
 
+reranking:
+  candidate_top_k: 20
+  final_top_k: 5
+
 indexing:
   embedding_batch_size: 32
   normalize_embeddings: true

@@ -61,12 +61,16 @@ flowchart TD
     C -->|Dense| D[Dense retrieval<br/>semantic similarity]
     C -->|Hybrid| H[Hybrid retrieval<br/>BM25 + dense]
 
-    K --> O[/Ranked evidence chunks/]
+    K --> O[/Candidate evidence chunks/]
     D --> O
     H --> X([Reciprocal Rank Fusion<br/>combine ranked lists])
     X --> O
 
-    O --> P[chunk_id<br/>document title<br/>page range<br/>score<br/>chunk text preview]
+    O --> RR{{Use reranker?}}
+    RR -->|No| P[Final retrieved chunks<br/>chunk_id, document, pages, score]
+    RR -->|Yes| RE([05_reranking.py<br/>cross-encoder reranking])
+    RE --> P
+    P --> G[Ready for generation]
 ```
 
 ## Project Structure
@@ -649,6 +653,61 @@ If a chunk appears high in dense results, it gets points.
 Chunks that rank well in either or both lists rise to the top.
 ```
 
+## Step 05: Rerank Evidence
+
+File:
+
+```text
+app/05_reranking.py
+```
+
+Input:
+
+```text
+User question
+Candidate chunks from app/04_retrieval.py
+```
+
+Output:
+
+```text
+better ordered evidence chunks
+```
+
+Run reranking with hybrid first-stage retrieval:
+
+```bash
+python app/05_reranking.py "What was Netflix revenue in 2017?" --method hybrid
+```
+
+Run with custom candidate and final result counts:
+
+```bash
+python app/05_reranking.py "What was Netflix revenue in 2017?" --method hybrid --candidate-top-k 20 --final-top-k 5
+```
+
+What reranking does:
+
+```text
+First-stage retrieval finds candidate chunks quickly.
+The reranker compares the question and each candidate chunk more carefully.
+Then it sorts candidates again using rerank_score.
+```
+
+Model used:
+
+```text
+cross-encoder/ms-marco-MiniLM-L-6-v2
+```
+
+BM25 and dense retrieval score chunks separately. A cross-encoder scores the pair:
+
+```text
+(question, candidate chunk)
+```
+
+That makes reranking more precise, but slower. It should be used on a small candidate set, such as top 20, not all 112,485 chunks.
+
 ## Static vs Dynamic RAG Indexing
 
 This project uses a static corpus:
@@ -769,8 +828,6 @@ Dynamic corpus:
 Next files will be implemented later:
 
 ```text
-app/04_retrieval.py      -> BM25, dense, and hybrid retrieval
-app/05_reranking.py      -> optional cross-encoder reranking
 app/06_generation.py     -> source-grounded LLM answer generation
 app/07_rag_pipeline.py   -> orchestration layer
 app/08_evaluation.py     -> FinanceBench evaluation
@@ -784,6 +841,8 @@ Current status:
 ```text
 PDF parsing complete.
 Chunking complete.
-Indexer implemented and tested on 500 chunks.
-Full index build can be run with python app/03_indexer.py.
+Full indexing complete.
+Retrieval complete.
+Reranking complete.
+Next step: generation.
 ```
